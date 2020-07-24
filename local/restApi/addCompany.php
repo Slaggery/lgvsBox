@@ -2,7 +2,8 @@
 
 class Company
 {
-    const IDBLOCK = 17;
+    const IDBLOCKUSER = 17;
+    const IDBLOCKREGION = 18;
 
     public static function whatDoCompany($query)
     {
@@ -13,14 +14,17 @@ class Company
             if ($company->DeleteMark === "True") {
                 $result[] = self::deleteCompany($company->Guid1C);
             } else {
-                $manager = current(APILists::getElement(self::IDBLOCK, $company->Manager->Manager_Guid1C));
+                $manager = current(APILists::getElement(['IBLOCK_ID' => self::IDBLOCKUSER, 'PROPERTY_GUID1C' => $company->Manager->Manager_Guid1C]));
                 $idManager = $manager['PROPERTIES']['BXID']['VALUE'];
                 if ($idManager == null) $idManager = 1;
 
+                $region = current(APILists::getElement(['IBLOCK_ID' => self::IDBLOCKREGION, 'PROPERTY_GUID1C' => $company->Folder]));
+                $idRegion = $region['ID'];
+
                 $headClient = APICompany::getCompanyList(['UF_GUID1C' => $company->HeadClient], ['ID']);
 
-                $phones = APIContacts::getPhone($company->Contact->Contact_Phone);
-                $emails = APIContacts::getEmail($company->Contact->Contact_Email);
+                $phones = APIContacts::collectPhone($company->Contact->Contact_Phone);
+                $emails = APIContacts::collectEmail($company->Contact->Contact_Email);
 
                 $contactList = APIContacts::getContactList(['UF_GUID1C' => $company->ContactFace->ContactFace_Guid1C], ['ID']);
                 count($contactList) === 0 ? $idContact = self::addContact($idManager, $company->ContactFace) : $idContact = $contactList[0]['ID'];
@@ -30,12 +34,13 @@ class Company
                     'UF_GUID1C' => $company->Guid1C,
                     'ASSIGNED_BY_ID' => $idManager,
                     'UF_HEADCLIENT' => $headClient[0]['ID'],
-                    'UF_COMMENT' => $company->Comment,
+                    'COMMENTS' => $company->Comment,
                     'FM' => [
                         'PHONE' => $phones,
                         'EMAIL' => $emails
                     ],
                     'CONTACT_ID' => [$idContact],
+                    'UF_REGION' => $idRegion,
                     'UF_SYNCHRONIZE' => 1
                 ];
 
@@ -62,6 +67,7 @@ class Company
 
                 $bankRequisiteData = [
                     'ENTITY_TYPE_ID' => CCrmOwnerType::Requisite,
+                    "XML_ID" => $company->Bank->Bank_Guid1C,
                     'ENTITY_ID' => "",
                     'COUNTRY_ID' => 1,
                     'NAME' => "Банковские реквизиты",
@@ -88,8 +94,8 @@ class Company
 
     private static function addContact($assignedById = null, $contact = [])
     {
-        $phones = APIContacts::getPhone($contact->ContactFace_Phone);
-        $emails = APIContacts::getEmail($contact->ContactFace_Email);
+        $phones = APIContacts::collectPhone($contact->ContactFace_Phone);
+        $emails = APIContacts::collectEmail($contact->ContactFace_Email);
 
         $dataContact = [
             'NAME' => $contact->ContactFace_Name,
@@ -155,7 +161,7 @@ class Company
     private static function updateCompany($companyData = [], $requisiteData = [], $bankRequisiteData = [])
     {
         $idCompany = APICompany::getCompanyList(['UF_GUID1C' => $companyData['UF_GUID1C']]);
-        return $idCompany;
+
         $delContact = APIContacts::deleteContact($idCompany[0]['ID']);
 
         $idRequisites = APICompany::getRequisiteList(['XML_ID' => $companyData['UF_GUID1C']], ['ID']);
@@ -172,7 +178,7 @@ class Company
                 $requisiteData['ENTITY_ID'] = $idCompany[0]['ID'];
                 $updateRequisite = APICompany::addRequisite($requisiteData);
 
-                if (is_numeric($updateRequisite)){
+                if (is_numeric($updateRequisite)) {
                     $bankRequisiteData['ENTITY_ID'] = $updateRequisite;
                     $updateBankRequisite = APICompany::addBankRequisite($bankRequisiteData);
 

@@ -1,5 +1,62 @@
 <?php
 
+class APIInvoice
+{
+    public static function deleteInvoice($idInvoice = null)
+    {
+        $CCrmInvoice = new CCrmInvoice;
+
+        $result = $CCrmInvoice->Delete($idInvoice);
+        return $result;
+    }
+
+    public static function getInvoiceList($filter = [], $select = [])
+    {
+        $invoices = CCrmInvoice::GetList([], $filter, false, false, $select);
+
+        $result = [];
+        while ($arInvoices = $invoices->Fetch()) {
+            $result[] = $arInvoices;
+        }
+        return $result;
+    }
+
+    public static function addInvoice($data = [])
+    {
+        $addInvoice = new CCrmInvoice;
+
+        $resultAddInvoice = $addInvoice->Add($data);
+
+        if ($resultAddInvoice) {
+            return $resultAddInvoice;
+        }
+
+        return $addInvoice->LAST_ERROR;
+    }
+
+    public static function updateInvoice($idInvoice = null, $data = [])
+    {
+        $updateInvoice = new CCrmInvoice;
+
+        $resultUpdateInvoice = $updateInvoice->Update($idInvoice, $data);
+
+        if ($resultUpdateInvoice) {
+            return $resultUpdateInvoice;
+        }
+
+        return $updateInvoice->LAST_ERROR;
+    }
+
+    public static function getRequisites($innCompany)
+    {
+        $client = new \Bitrix\socialservices\properties\Client;
+        $arRequisite = $client->getByInn($innCompany);
+        if ($arRequisite) return $arRequisite;
+
+        return $client->LAST_ERROR;
+    }
+}
+
 class APIContacts
 {
     public static function addContact($data = [])
@@ -26,7 +83,7 @@ class APIContacts
         return $contact;
     }
 
-    public static function getPhone($phones = [])
+    public static function collectPhone($phones = [])
     {
         $phones = str_replace(" ", "", $phones);
         $phones = explode(",", $phones);
@@ -40,7 +97,7 @@ class APIContacts
         return $arPhone;
     }
 
-    public static function getEmail($emails = [])
+    public static function collectEmail($emails = [])
     {
         $emails = str_replace(" ", "", $emails);
         $emails = explode(",", $emails);
@@ -69,6 +126,17 @@ class APIContacts
         return $result;
     }
 
+    public static function getContacts($filter = [])
+    {
+        $contacts = [];
+        $contactsResMultiFields = CCrmFieldMulti::GetList([], $filter);
+        while ($arContacts = $contactsResMultiFields->GetNext()) {
+            $contacts[] = $arContacts;
+        }
+
+        return $contacts;
+    }
+
 }
 
 class APICompany
@@ -82,6 +150,12 @@ class APICompany
             $company[] = $companyList;
         }
         return $company;
+    }
+
+    public static function getCompanyById($idCompany = null)
+    {
+        $result = CCrmCompany::GetById($idCompany);
+        return $result;
     }
 
     public static function addCompany($data = [])
@@ -123,7 +197,7 @@ class APICompany
         return $result->getErrorMessages;
     }
 
-    public static function deleteCompany($idCompany)
+    public static function deleteCompany($idCompany = null)
     {
         $CCrmCompany = new CCrmCompany;
 
@@ -136,11 +210,24 @@ class APICompany
         return $CCrmCompany->LAST_ERROR;
     }
 
-    public static function getRequisiteList($filter = [], $select = [])
+    public static function getRequisiteList($filter = [], $select = ['*'])
     {
         $filter['ENTITY_TYPE_ID'] = CCrmOwnerType::Company;
 
         $CCrmRequisites = new \Bitrix\Crm\EntityRequisite();
+
+        $requisiteList = $CCrmRequisites->getList(['filter' => $filter, 'select' => $select]);
+
+        $requisite = [];
+        while ($requisites = $requisiteList->Fetch()) {
+            $requisite[] = $requisites;
+        }
+        return $requisite;
+    }
+
+    public static function getBankRequisiteList($filter = [], $select = ['*'])
+    {
+        $CCrmRequisites = new \Bitrix\Crm\EntityBankDetail();
 
         $requisiteList = $CCrmRequisites->getList(['filter' => $filter, 'select' => $select]);
 
@@ -170,6 +257,20 @@ class APICompany
         if ($result) return $result;
 
         return $CCrmCompany->LAST_ERROR;
+    }
+
+    public static function getAddress($idRequisite = null)
+    {
+        $result = \Bitrix\Crm\EntityRequisite::getAddresses($idRequisite);
+        return $result;
+    }
+
+    public static function getRequisitesById($idRequisites = null)
+    {
+        $CCrmRequisites = new \Bitrix\Crm\EntityRequisite;
+
+        $result = $CCrmRequisites->getById($idRequisites);
+        return $result;
     }
 }
 
@@ -213,11 +314,10 @@ class APILists
         return $el->LAST_ERROR;
     }
 
-    public static function getElement($idBlock = null, $guid1C = null, $arSelect = [])
+    public static function getElement($filter = [], $arSelect = [])
     {
         $elements = [];
         $order = ['SORT' => 'ASC'];
-        $filter = ['IBLOCK_ID' => $idBlock, 'PROPERTY_GUID1C' => $guid1C];
         $rows = CIBlockElement::GetList($order, $filter, false, false, $arSelect);
         while ($row = $rows->fetch()) {
             $row['PROPERTIES'] = [];
@@ -232,6 +332,91 @@ class APILists
     }
 }
 
+class APILead
+{
+    public static function addLead($data)
+    {
+        $CCrmLead = new CCrmLead;
+        $result = $CCrmLead->Add($data);
+        return $result;
+    }
+}
+
+class APIActivity
+{
+    public static function addActivity($data)
+    {
+        $CCrmActivity = new CCrmActivity;
+
+        $result = $CCrmActivity->Add($data);
+        return $result;
+    }
+
+    public static function getActivityList($filter = [], $select = [])
+    {
+        $CCrmActivity = new CCrmActivity;
+
+        $activityList = $CCrmActivity->GetList([], $filter, false, false, $select);
+
+        $result = [];
+        while ($arActivityList = $activityList->Fetch()) {
+            $result[] = $arActivityList;
+        }
+
+        return $result;
+    }
+
+    public static function updateActivity($id = null, $data = [])
+    {
+        $CCrmActivity = new CCrmActivity;
+
+        $result = $CCrmActivity->Update($id, $data);
+        return $result;
+    }
+}
+
+class APITasks
+{
+    public static function addTask($data)
+    {
+        $CTasks = new CTasks;
+        $result = $CTasks->Add($data);
+
+        if ($result) return $result;
+        return $CTasks->GetErrors();
+    }
+}
+
+class APIDeal
+{
+    public static function getDealList($filter = [], $select = [])
+    {
+        $dealList = CCrmDeal::GetList([], $filter, $select);
+
+        $result = [];
+        while ($arDealList = $dealList->Fetch()) {
+            $result[] = $arDealList;
+        }
+
+        return $result;
+    }
+
+    public static function updateDeal($id = null, $data = [])
+    {
+        $CCrmDeal = new CCrmDeal;
+
+        $result = $CCrmDeal->Update($id, $data);
+        return $result;
+    }
+
+    public static function getDealById($idDeal = null)
+    {
+        $result = CCrmDeal::GetById($idDeal);
+
+        return $result;
+    }
+}
+
 class Log
 {
     public static function logFile($message = null, $data = [], $logName = null)
@@ -240,7 +425,7 @@ class Log
             $data = json_encode($data, 256);
         }
 
-        $file = '/home/bitrix/www/local/logs/' . $logName;
+        $file = '/home/bitrix/ext_www/default/local/logs/' . $logName;
         $text = "=======================================================\n";
         $text .= $message . $data;
         $text .= "\n" . date('Y-m-d H:i:s') . "\n";

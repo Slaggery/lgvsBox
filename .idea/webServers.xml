@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="WebServers">
+    <option name="servers">
+      <webServer id="89eb096c-cf78-4a8d-bd6d-6845c2a57e58" name="lgvs" url="http://37.140.192.67">
+        <fileTransfer rootFolder="/home/bitrix/ext_www/default" accessType="SFTP" host="109.202.25.80" port="22" sshConfigId="63248f42-0aa1-4c37-a965-4339ea6241e1" sshConfig="lgvs">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" passiveMode="true" shareSSLContext="true" />
+          </advancedOptions>
+        </fileTransfer>
+      </webServer>
+    </option>
+  </component>
+</project>
