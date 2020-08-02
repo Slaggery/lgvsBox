@@ -55,6 +55,12 @@ class APIInvoice
 
         return $client->LAST_ERROR;
     }
+
+    public static function getInvoiceById($idInvoice = null)
+    {
+        $result = CCrmInvoice::GetById($idInvoice);
+        return $result;
+    }
 }
 
 class APIContacts
@@ -281,7 +287,7 @@ class APILists
         $el = new CIBlockElement;
 
         $data = [
-            'NAME' => $arFields['Name'],
+            'NAME' => $arFields->Name,
         ];
 
         $result = $el->Update($idElement, $data);
@@ -299,9 +305,9 @@ class APILists
 
         $data = [
             'IBLOCK_ID' => $idBlock,
-            'NAME' => $arFields['Name'],
+            'NAME' => $arFields->Name,
             'PROPERTY_VALUES' => [
-                'GUID1C' => $arFields['Guid1C']
+                'GUID1C' => $arFields->Guid1C
             ]
         ];
 
@@ -349,6 +355,7 @@ class APIActivity
         $CCrmActivity = new CCrmActivity;
 
         $result = $CCrmActivity->Add($data);
+
         return $result;
     }
 
@@ -415,15 +422,23 @@ class APIDeal
 
         return $result;
     }
+
+    public static function addDeal($data = [])
+    {
+        $CCrmDeal = new CCrmDeal;
+
+        $result = $CCrmDeal->Add($data);
+        return $result;
+    }
 }
 
 class Log
 {
     public static function logFile($message = null, $data = [], $logName = null)
     {
-        if (is_array($data)) {
+        //if (is_array($data)) {
             $data = json_encode($data, 256);
-        }
+        //}
 
         $file = '/home/bitrix/ext_www/default/local/logs/' . $logName;
         $text = "=======================================================\n";

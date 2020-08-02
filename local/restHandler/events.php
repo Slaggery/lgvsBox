@@ -30,10 +30,29 @@ class Events
 
     public static function updateDeal($arFields)
     {
-        if (isset($arFields['UF_CRM_1595324006085'])) {
-            if ($arFields['UF_CRM_1595324006085'] !== "") {
-                $dealActivity = APIActivity::getActivityList(['OWNER_ID' => $arFields['ID'], 'SUBJECT' => 'Определить категорию товара']);
-                $dealActivityUpdate = APIActivity::updateActivity($dealActivity[0]['ID'], ['COMPLETED' => 'Y']);
+        if (isset($arFields['UF_CRM_1595324006085']) && $arFields['UF_CRM_1595324006085'] !== "") {
+            $dealActivity = APIActivity::getActivityList(['OWNER_ID' => $arFields['ID'],
+                'SUBJECT' => 'Определить категорию товара',
+                'COMPLETED' => 'N']);
+            $dealActivityUpdate = APIActivity::updateActivity($dealActivity[0]['ID'], ['COMPLETED' => 'Y']);
+        }
+
+        if (isset($arFields['UF_CRM_1582775986809'])
+        || isset($arFields['UF_CRM_1582775957638'])) {
+            if ($arFields['UF_CRM_1582775986809'] !== "") {
+                $dealActivity = APIActivity::getActivityList(['OWNER_ID' => $arFields['ID'],
+                    'SUBJECT' => 'Заполнить  Запланированная дата отгрузки',
+                    'COMPLETED' => 'N']);
+                Log::logFile('Date:', $dealActivity, 'eventUpdateDeal.log');
+
+                APIActivity::updateActivity($dealActivity[0]['ID'], ['COMPLETED' => 'Y']);
+            }
+
+            if ($arFields['UF_CRM_1582775957638'] !== "") {
+                $dealActivity = APIActivity::getActivityList(['OWNER_ID' => $arFields['ID'],
+                    'SUBJECT' => 'Заполнить Согласованная дата оплаты',
+                    'COMPLETED' => 'N']);
+                APIActivity::updateActivity($dealActivity[0]['ID'], ['COMPLETED' => 'Y']);
             }
         }
     }
@@ -43,7 +62,6 @@ class Events
         $arJsConfig = array(
             'stages_disabler_ui' => array(
                 'js' => '/local/js/stages_disabler.ui.js',
-                'css' => '/local/css/hide_tasks_actions.css'
             ),
         );
         foreach ($arJsConfig as $ext => $arExt) {

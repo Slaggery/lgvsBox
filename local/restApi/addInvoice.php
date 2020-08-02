@@ -1,20 +1,20 @@
 <?php
 
-class Invoice
+class Invoices
 {
-    public static function whatDoInvoice($query)
+    public static function whatDoInvoices($query)
     {
         $invoices = json_decode($query['mData']);
 
         $result = [];
         foreach ($invoices as $invoice) {
+            Log::logFile('invoice: ', $invoice, 'addInvoice.log');
             if ($invoice->DeleteMark === "True") {
                 $result[] = self::deleteInvoice($invoice);
                 continue;
             }
 
             $products_rows = [];
-            $dealProduct = [];
             foreach ($invoice->products as $product) {
                 $products_rows[] = array(
                     'PRODUCT_NAME' => $product->PRODUCT_NAME,
@@ -25,19 +25,17 @@ class Invoice
                     'VAT_RATE' => '0.' . $product->NDS_rate,
                     'VAT_INCLUDED' => "Y"
                 );
+            }
 
+            $dealProduct = [];
+            foreach($invoice->summedGroups as $summedGroup) {
                 $dealProduct[] = [
-                    'PRODUCT_NAME' => $product->PRODUCT_NAME,
-                    'QUANTITY' => $product->QUANTITY,
-                    'PRICE' => ((($product->SUM - $product->NDS_sum + $product->DISCOUNT) * 1.20) / $product->QUANTITY) - ($product->DISCOUNT / $product->QUANTITY * 0.20) - ($product->DISCOUNT / $product->QUANTITY),
-                    'DISCOUNT_TYPE_ID' => 1,
-                    'DISCOUNT_RATE' => $product->DISCOUNT / $product->QUANTITY,
-                    'DISCOUNT_SUM' => $product->DISCOUNT / $product->QUANTITY,
-                    'TAX_RATE' => 20,
-                    'TAX_INCLUDED' => 'Y'
+                    'PRODUCT_NAME' => $summedGroup->name,
+                    'QUANTITY' => 1,
+                    'PRICE' => $summedGroup->summ,
                 ];
             }
-//return $products_rows;
+
             $idCompany = APICompany::getCompanyList(['UF_GUID1C' => $invoice->Client], ['ID']);
             $idCompany = $idCompany[0]['ID'];
 
@@ -57,7 +55,6 @@ class Invoice
 
             $invoiceData = [
                 'UF_COMPANY_ID' => $idCompany,
-                'UF_CONTACT_ID' => 8,
                 'UF_MYCOMPANY_ID' => 0,
                 'ACCOUNT_NUMBER' => $invoice->Number,
                 'UF_DEAL_ID' => $invoice->DEAL_ID,
@@ -75,16 +72,28 @@ class Invoice
 
             if (count($idInvoice) === 0) {
                 $result[] = APIInvoice::addInvoice($invoiceData);
+                $dealActivity = APIActivity::getActivityList(['OWNER_ID' => $invoice->DEAL_ID,
+                    'SUBJECT' => 'Выставить счет в 1С',
+                    'COMPLETED' => 'N']);
+
+                APIActivity::updateActivity($dealActivity[0]['ID'], ['COMPLETED' => 'Y']);
                 CCrmProductRow::SaveRows("D", $invoice->DEAL_ID, $dealProduct);
                 APIDeal::updateDeal($invoice->DEAL_ID, ['STAGE_ID' => 'FINAL_INVOICE']);
-                $dealActivity = APIActivity::getActivityList(['OWNER_ID' => $invoice->DEAL_ID, 'SUBJECT' => 'Выставить счет в 1С']);
-                $dealActivityUpdate = APIActivity::updateActivity($dealActivity[0]['ID'], ['COMPLETED' => 'Y']);
+
+                $arErrorsTmp = array();
+
+                CBPDocument::StartWorkflow(
+                    27,
+                    array('crm', 'CCrmDocumentCompany', 'DEAL_' . $invoice->DEAL_ID),
+                    array_merge(),
+                    $arErrorsTmp
+                );
+
                 continue;
             }
 
             $result[] = APIInvoice::updateInvoice($idInvoice[0]['ID'], $invoiceData);
             CCrmProductRow::SaveRows('D', $invoice->DEAL_ID, $dealProduct);
-
         }
 
         return $result;
@@ -92,7 +101,7 @@ class Invoice
 
     final static function deleteInvoice($invoice)
     {
-
+        Log::logFile('deleteInvoice: ', $invoice, 'deleteInvoice.logдали доступ, мы работаем');
         return $invoice;
     }
 }

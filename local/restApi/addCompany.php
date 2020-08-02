@@ -11,23 +11,29 @@ class Company
 
         $result = [];
         foreach ($companies as $company) {
+            Log::logFile('company: ', $company, 'addCompany.log');
             if ($company->DeleteMark === "True") {
                 $result[] = self::deleteCompany($company->Guid1C);
             } else {
                 $manager = current(APILists::getElement(['IBLOCK_ID' => self::IDBLOCKUSER, 'PROPERTY_GUID1C' => $company->Manager->Manager_Guid1C]));
                 $idManager = $manager['PROPERTIES']['BXID']['VALUE'];
-                if ($idManager == null) $idManager = 1;
+                if ($idManager == null) $idManager = 4;
 
                 $region = current(APILists::getElement(['IBLOCK_ID' => self::IDBLOCKREGION, 'PROPERTY_GUID1C' => $company->Folder]));
                 $idRegion = $region['ID'];
 
+                if ($company->Folder === "") $idRegion = "";
+
                 $headClient = APICompany::getCompanyList(['UF_GUID1C' => $company->HeadClient], ['ID']);
+                if($company->HeadClient === "") $headClient = [];
 
                 $phones = APIContacts::collectPhone($company->Contact->Contact_Phone);
                 $emails = APIContacts::collectEmail($company->Contact->Contact_Email);
 
-                $contactList = APIContacts::getContactList(['UF_GUID1C' => $company->ContactFace->ContactFace_Guid1C], ['ID']);
-                count($contactList) === 0 ? $idContact = self::addContact($idManager, $company->ContactFace) : $idContact = $contactList[0]['ID'];
+                if ($company->ContactFace->ContactFace_Guid1C !== "") {
+                    $contactList = APIContacts::getContactList(['UF_GUID1C' => $company->ContactFace->ContactFace_Guid1C], ['ID']);
+                    count($contactList) === 0 ? $idContact = self::addContact($idManager, $company->ContactFace) : $idContact = $contactList[0]['ID'];
+                }
 
                 $companyData = [
                     'TITLE' => $company->Name,
@@ -79,12 +85,16 @@ class Company
                     'RQ_COR_ACC_NUM' => $company->Bank->Bank_KorSchet
                 ];
 
-                $companyList = APICompany::getCompanyList(['UF_GUID1C' => $company->Guid1C]);
+                if ($company->ID !== "") {
+                    $companyList = APICompany::getCompanyList(['ID' => $company->ID]);
+                } else {
+                    $companyList = APICompany::getCompanyList(['UF_GUID1C' => $company->Guid1C]);
+                }
 
                 if (count($companyList) == 0) {
                     $result[] = self::addCompany($companyData, $requisiteData, $bankRequisiteData);
                 } else {
-                    $result[] = self::updateCompany($companyData, $requisiteData, $bankRequisiteData);
+                    $result[] = self::updateCompany($companyData, $requisiteData, $bankRequisiteData, $company->ID);
                 }
             }
         }
@@ -158,13 +168,17 @@ class Company
         ];
     }
 
-    private static function updateCompany($companyData = [], $requisiteData = [], $bankRequisiteData = [])
+    private static function updateCompany($companyData = [], $requisiteData = [], $bankRequisiteData = [], $bxid = null)
     {
-        $idCompany = APICompany::getCompanyList(['UF_GUID1C' => $companyData['UF_GUID1C']]);
+        if ($bxid == null) {
+            $idCompany = APICompany::getCompanyList(['UF_GUID1C' => $companyData['UF_GUID1C']]);
+            $idRequisites = APICompany::getRequisiteList(['XML_ID' => $companyData['UF_GUID1C']], ['ID']);
+        } else {
+            $idCompany = APICompany::getCompanyList(['ID' => $bxid]);;
+            $idRequisites = APICompany::getRequisiteList(['ENTITY_ID' => $bxid], ['ID']);
+        }
 
         $delContact = APIContacts::deleteContact($idCompany[0]['ID']);
-
-        $idRequisites = APICompany::getRequisiteList(['XML_ID' => $companyData['UF_GUID1C']], ['ID']);
 
         $delRequisite = true;
         if (count($idRequisites) !== 0) {

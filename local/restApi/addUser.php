@@ -7,13 +7,13 @@ class User
     public static function whatDoUser($query)
     {
 
-        $users = json_decode($query['mData'], true);
+        $users = json_decode($query['mData']);
 
         Log::logFile('Количество пользователей: ', count($users), 'addUser.log');
 
         $result = [];
         foreach ($users as $user) {
-            $el = APILists::getElement(['IBLOCK_ID' =>self::IDBLOCK, 'PROPERTY_GUID1C' =>$user['Guid1C']], ['ID', 'NAME']);
+            $el = APILists::getElement(['IBLOCK_ID' =>self::IDBLOCK, 'PROPERTY_GUID1C' =>$user->Guid1C], ['ID', 'NAME']);
 
             if (count($el) == 0) {
                 $result[] = APILists::addElement(self::IDBLOCK, $user);

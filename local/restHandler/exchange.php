@@ -38,8 +38,44 @@ class ExchangeOdinS
                     'callback' => array(__CLASS__, 'getDeals'),
                     'options' => array(),
                 ),
+                'lgvs.exchange.completion.invoice' => array(
+                    'callback' => array(__CLASS__, 'completionInvoice'),
+                    'options' => array(),
+                ),
+                'lgvs.exchange.completion.deal' => array(
+                    'callback' => array(__CLASS__, 'completionDeal'),
+                    'options' => array(),
+                ),
+                'lgvs.exchange.get.deals.cloud' => array(
+                    'callback' => array(__CLASS__, 'getDealsCloud'),
+                    'options' => array(),
+                ),
             ),
         );
+    }
+
+    public static function getDealsCloud($query, $n, \CRestServer $server)
+    {
+        if ($query['error']) throw new \Bitrix\Rest\RestException('Global Error', 'ERR_GLOBAL', \CRestServer::STATUS_PAYMENT_REQUIRED);
+        include_once($_SERVER["DOCUMENT_ROOT"] . '/local/restApi/getDealsCloud.php');
+
+        return DealsCloud::whatDoDeals($query);
+    }
+
+    public static function completionDeal($query, $n, \CRestServer $server)
+    {
+        if ($query['error']) throw new \Bitrix\Rest\RestException('Global Error', 'ERR_GLOBAL', \CRestServer::STATUS_PAYMENT_REQUIRED);
+        include_once($_SERVER["DOCUMENT_ROOT"] . '/local/restApi/completionDeal.php');
+
+        return Deal::whatDoDeal($query);
+    }
+
+    public static function completionInvoice($query, $n, \CRestServer $server)
+    {
+        if ($query['error']) throw new \Bitrix\Rest\RestException('Global Error', 'ERR_GLOBAL', \CRestServer::STATUS_PAYMENT_REQUIRED);
+        include_once($_SERVER["DOCUMENT_ROOT"] . '/local/restApi/completionInvoice.php');
+
+        return Invoice::whatDoInvoice($query);
     }
 
     public static function getDeals($query, $n, \CRestServer $server)
@@ -56,7 +92,7 @@ class ExchangeOdinS
         if ($query['error']) throw new \Bitrix\Rest\RestException('Global Error', 'ERR_GLOBAL', \CRestServer::STATUS_PAYMENT_REQUIRED);
         include_once($_SERVER["DOCUMENT_ROOT"] . '/local/restApi/addInvoice.php');
 
-        return Invoice::whatDoInvoice($query);
+        return Invoices::whatDoInvoices($query);
     }
 
     public static function getLeads($query, $n, \CRestServer $server)

@@ -34,46 +34,52 @@ class Company
             $idManager = $manager['PROPERTIES']['GUID1C']['VALUE'];
 
             $contactFace = APIContacts::getContactList(['COMPANY_ID' => $company['ID']]);
-            $dataContact = APIContacts::getContacts(['ELEMENT_ID' => $contactFace[0]['ID']]);
+
+            $dataContactFace = [];
+            if (count($contactFace) == !0) $dataContactFace = APIContacts::getContacts(['ELEMENT_ID' => $contactFace[0]['ID']]);
+
+            $dataContact = APIContacts::getContacts(['ELEMENT_ID' => $company['ID']]);
 
             $contactFacePhone = [];
             $contactFaceEmail = [];
             $contactPhone = [];
             $contactEmail = [];
-            foreach ($dataContact as $contact) {
-                if ($contact['ENTITY_ID'] === "CONTACT") {
-                    if ($contact['TYPE_ID'] === "PHONE") {
-                        $contactFacePhone[] = $contact['~VALUE'];
-                    }
 
-                    if ($contact['TYPE_ID'] === "EMAIL") {
-                        $contactFaceEmail[] = $contact['~VALUE'];
-                    }
+            foreach ($dataContact as $contact) {
+                if ($contact['TYPE_ID'] === "PHONE") {
+                    $contactPhone[] = $contact['~VALUE'];
                 }
 
-                if ($contact['ENTITY_ID'] === "COMPANY") {
-                    if ($contact['TYPE_ID'] === "PHONE") {
-                        $contactPhone[] = $contact['~VALUE'];
+                if ($contact['TYPE_ID'] === "EMAIL") {
+                    $contactEmail[] = $contact['~VALUE'];
+                }
+            }
+
+            foreach ($dataContactFace as $faceData) {
+                if ($faceData['ENTITY_ID'] === "CONTACT") {
+                    if ($faceData['TYPE_ID'] === "PHONE") {
+                        $contactFacePhone[] = $faceData['~VALUE'];
                     }
 
-                    if ($contact['TYPE_ID'] === "EMAIL") {
-                        $contactEmail[] = $contact['~VALUE'];
+                    if ($faceData['TYPE_ID'] === "EMAIL") {
+                        $contactFaceEmail[] = $faceData['~VALUE'];
                     }
                 }
             }
 
             $address = APICompany::getAddress($requisites[0]['ID']);
 
+            $company['COMMENTS'] === "" ? $comments = "-" : $comments = $company['COMMENTS'];
             $result[] = [
-                'BXID' => $company['ID'],
-                'Guid1C' => $company['UF_GUID1C'],
+                'BXID' => $company['ID'] == "" ? "-" : $company['ID'],
+                'Guid1C' => $company['UF_GUID1C'] == "" ? "-" : $company['UF_GUID1C'],
                 'Folder' => $guidRegion,
-                'Name' => $requisites[0]['RQ_COMPANY_NAME'],
-                'FullName' => $requisites[0]['RQ_COMPANY_FULL_NAME'],
+                'Name' => $company['TITLE'],
+                //'FullName' => $requisites[0]['RQ_COMPANY_FULL_NAME'],
                 'Type' => $requisites[0]['PRESET_ID'] === "1" ? 'ЮЛ' : 'ФЛ',
                 'INN' => $requisites[0]['RQ_INN'],
                 'Manager_Guid1C' => $idManager,
-                'Comment' => $company['COMMENTS'],
+                'Comment' => $comments,
                 'ContactFace' => [
                     'ContactFace_Guid1C' => $contactFace[0]['UF_GUID1C'],
                     'ContactFace_Name' => $contactFace[0]['FULL_NAME'],

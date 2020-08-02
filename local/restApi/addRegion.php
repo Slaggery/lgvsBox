@@ -4,13 +4,13 @@ class Region
     const IDBLOCK = 18;
 
     public static function whatDoRegion($query){
-        $regions = json_decode($query['mData'], true);
+        $regions = json_decode($query['mData']);
 
         Log::logFile('Количество регионов: ', count($regions), 'addRegion.log');
 
         $result = [];
         foreach ($regions as $region) {
-            $el = APILists::getElement(['IBLOCK_ID' =>self::IDBLOCK, 'PROPERTY_GUID1C' =>$region['Guid1C']]);
+            $el = APILists::getElement(['IBLOCK_ID' =>self::IDBLOCK, 'PROPERTY_GUID1C' =>$region->Guid1C]);
 
             if (count($el) == 0) {
                 $result[] = APILists::addElement(self::IDBLOCK, $region);
