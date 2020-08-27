@@ -45,7 +45,7 @@ class Invoices
             $innCompany = $innCompany[0]['RQ_INN'];
 
 
-            $arRequisite = APIInvoice::getRequisites($innCompany);
+            $arRequisite = APICompany::getRequisites($innCompany);
 
             $invoiceProperties = [
                 9 => $arRequisite['INN'],
@@ -84,7 +84,7 @@ class Invoices
 
                 CBPDocument::StartWorkflow(
                     27,
-                    array('crm', 'CCrmDocumentCompany', 'DEAL_' . $invoice->DEAL_ID),
+                    array('crm', 'CCrmDocumentDeal', 'DEAL_' . $invoice->DEAL_ID),
                     array_merge(),
                     $arErrorsTmp
                 );
@@ -94,6 +94,14 @@ class Invoices
 
             $result[] = APIInvoice::updateInvoice($idInvoice[0]['ID'], $invoiceData);
             CCrmProductRow::SaveRows('D', $invoice->DEAL_ID, $dealProduct);
+            APIDeal::updateDeal($invoice->DEAL_ID, ['STAGE_ID' => 'FINAL_INVOICE']);
+
+            /*CBPDocument::StartWorkflow(
+                27,
+                array('crm', 'CCrmDocumentDeal', 'DEAL_' . $invoice->DEAL_ID),
+                array_merge(),
+                $arErrorsTmp
+            );*/
         }
 
         return $result;
@@ -101,7 +109,7 @@ class Invoices
 
     final static function deleteInvoice($invoice)
     {
-        Log::logFile('deleteInvoice: ', $invoice, 'deleteInvoice.logдали доступ, мы работаем');
+        Log::logFile('deleteInvoice: ', $invoice, 'deleteInvoice.log');
         return $invoice;
     }
 }

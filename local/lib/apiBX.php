@@ -47,15 +47,6 @@ class APIInvoice
         return $updateInvoice->LAST_ERROR;
     }
 
-    public static function getRequisites($innCompany)
-    {
-        $client = new \Bitrix\socialservices\properties\Client;
-        $arRequisite = $client->getByInn($innCompany);
-        if ($arRequisite) return $arRequisite;
-
-        return $client->LAST_ERROR;
-    }
-
     public static function getInvoiceById($idInvoice = null)
     {
         $result = CCrmInvoice::GetById($idInvoice);
@@ -65,11 +56,30 @@ class APIInvoice
 
 class APIContacts
 {
+    public static function getContactById($idContact = null)
+    {
+        $result = CCrmContact::GetById($idContact);
+        return $result;
+    }
+
     public static function addContact($data = [])
     {
         $CCrmContact = new CCrmContact;
 
         $result = $CCrmContact->Add($data);
+
+        if ($result) {
+            return $result;
+        }
+
+        return $CCrmContact->LAST_ERROR;
+    }
+
+    public static function updateContact($idContact = null, $data = [])
+    {
+        $CCrmContact = new CCrmContact;
+
+        $result = $CCrmContact->Update($idContact, $data);
 
         if ($result) {
             return $result;
@@ -91,13 +101,14 @@ class APIContacts
 
     public static function collectPhone($phones = [])
     {
-        $phones = str_replace(" ", "", $phones);
         $phones = explode(",", $phones);
 
         $arPhone = [];
         foreach ($phones as $index => $phone) {
-            $arPhone["n$index"]["VALUE"] = $phone;
-            $arPhone["n$index"]["VALUE_TYPE"] = "WORK";
+            if ($phone != "") {
+                $arPhone["n$index"]["VALUE"] = $phone;
+                $arPhone["n$index"]["VALUE_TYPE"] = "WORK";
+            }
         }
 
         return $arPhone;
@@ -110,17 +121,19 @@ class APIContacts
 
         $arEmail = [];
         foreach ($emails as $index => $email) {
-            if (preg_match("/^[a-zA-Z0-9_\-.]+@[a-zA-Z0-9\-]+\.[a-zA-Z0-9\-.]+$/", $email)) {
-                $arEmail["n$index"]["VALUE"] = $email;
-                $arEmail["n$index"]["VALUE_TYPE"] = "WORK";
+            if ($email != "") {
+                if (preg_match("/^[a-zA-Z0-9_\-.]+@[a-zA-Z0-9\-]+\.[a-zA-Z0-9\-.]+$/", $email)) {
+                    $arEmail["n$index"]["VALUE"] = $email;
+                    $arEmail["n$index"]["VALUE_TYPE"] = "WORK";
+                }
             }
         }
         return $arEmail;
     }
 
-    public static function deleteContact($idCompany = null)
+    public static function deleteContacts($id = null, $entity_id = null)
     {
-        $contactsResMultiFields = CCrmFieldMulti::GetList(array(), array('ELEMENT_ID' => $idCompany));
+        $contactsResMultiFields = CCrmFieldMulti::GetList(array(), array('ELEMENT_ID' => $id, 'ENTITY_ID' => $entity_id));
 
         $CCrmFieldMulti = new CCrmFieldMulti();
 
@@ -143,6 +156,18 @@ class APIContacts
         return $contacts;
     }
 
+    public static function deleteContact($idContact = null)
+    {
+        $CCrmContact = new CCrmContact;
+
+        $result = $CCrmContact->Delete($idContact);
+
+        if ($result) {
+            return $result;
+        }
+
+        return $CCrmContact->LAST_ERROR;
+    }
 }
 
 class APICompany
@@ -222,7 +247,7 @@ class APICompany
 
         $CCrmRequisites = new \Bitrix\Crm\EntityRequisite();
 
-        $requisiteList = $CCrmRequisites->getList(['filter' => $filter, 'select' => $select]);
+        $requisiteList = $CCrmRequisites->getList(['order' => ["ID" => "ASC"], 'filter' => $filter, 'select' => $select]);
 
         $requisite = [];
         while ($requisites = $requisiteList->Fetch()) {
@@ -276,6 +301,23 @@ class APICompany
         $CCrmRequisites = new \Bitrix\Crm\EntityRequisite;
 
         $result = $CCrmRequisites->getById($idRequisites);
+        return $result;
+    }
+
+    public static function getRequisites($innCompany)
+    {
+        $client = new \Bitrix\socialservices\properties\Client;
+        $arRequisite = $client->getByInn($innCompany);
+        if ($arRequisite) return $arRequisite;
+
+        return $client->LAST_ERROR;
+    }
+
+    public static function updateRequisite($idRequisite = null, $data = [])
+    {
+        $CCrmRequisites = new \Bitrix\Crm\EntityRequisite;
+
+        $result = $CCrmRequisites->Update((int)$idRequisite, $data);
         return $result;
     }
 }
@@ -437,7 +479,7 @@ class Log
     public static function logFile($message = null, $data = [], $logName = null)
     {
         //if (is_array($data)) {
-            $data = json_encode($data, 256);
+        $data = json_encode($data, 256);
         //}
 
         $file = '/home/bitrix/ext_www/default/local/logs/' . $logName;

@@ -50,8 +50,32 @@ class ExchangeOdinS
                     'callback' => array(__CLASS__, 'getDealsCloud'),
                     'options' => array(),
                 ),
+                'lgvs.exchange.get.contacts.cloud' => array(
+                    'callback' => array(__CLASS__, 'getContactsCloud'),
+                    'options' => array(),
+                ),
+                'lgvs.exchange.get.company.cloud' => array(
+                    'callback' => array(__CLASS__, 'getCompanyCloud'),
+                    'options' => array(),
+                ),
             ),
         );
+    }
+
+    public static function getCompanyCloud($query, $n, \CRestServer $server)
+    {
+        if ($query['error']) throw new \Bitrix\Rest\RestException('Global Error', 'ERR_GLOBAL', \CRestServer::STATUS_PAYMENT_REQUIRED);
+        include_once($_SERVER["DOCUMENT_ROOT"] . '/local/restApi/getCompanyCloud.php');
+
+        return CompanyCloud::whatDoCompany($query);
+    }
+
+    public static function getContactsCloud($query, $n, \CRestServer $server)
+    {
+        if ($query['error']) throw new \Bitrix\Rest\RestException('Global Error', 'ERR_GLOBAL', \CRestServer::STATUS_PAYMENT_REQUIRED);
+        include_once($_SERVER["DOCUMENT_ROOT"] . '/local/restApi/getContactsCloud.php');
+
+        return ContactsCloud::whatDoContacts($query);
     }
 
     public static function getDealsCloud($query, $n, \CRestServer $server)

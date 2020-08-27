@@ -24,15 +24,28 @@ class Company
 
                 if ($company->Folder === "") $idRegion = "";
 
-                $headClient = APICompany::getCompanyList(['UF_GUID1C' => $company->HeadClient], ['ID']);
-                if($company->HeadClient === "") $headClient = [];
+                $headClient = [];
+                if ($company->HeadClient !== null && $company->HeadClient !== "") {
+                    $headClient = APICompany::getCompanyList(['UF_GUID1C' => $company->HeadClient], ['ID']);
+                }
 
                 $phones = APIContacts::collectPhone($company->Contact->Contact_Phone);
                 $emails = APIContacts::collectEmail($company->Contact->Contact_Email);
 
-                if ($company->ContactFace->ContactFace_Guid1C !== "") {
-                    $contactList = APIContacts::getContactList(['UF_GUID1C' => $company->ContactFace->ContactFace_Guid1C], ['ID']);
-                    count($contactList) === 0 ? $idContact = self::addContact($idManager, $company->ContactFace) : $idContact = $contactList[0]['ID'];
+                $idContact = [];
+                if (count($company->ContactFace) !== 0) {
+                    foreach ($company->ContactFace as $contactFace) {
+                        if ($contactFace->ContactFace_Guid1C !== "") {
+                            $contactList = APIContacts::getContactList(['UF_GUID1C' => $contactFace->ContactFace_Guid1C], ['ID']);
+
+                            /*if (count($contactList) === 0) {
+                                $contactList = APIContacts::getContactList(['NAME' => $contactFace->ContactFace_Name], ['ID']);
+                            }*/
+                            count($contactList) === 0 ?
+                                $idContact[] = self::addContact($idManager, $contactFace)
+                                : $idContact[] = self::updateContact($idManager, $contactList[0]['ID'], $contactFace);
+                        }
+                    }
                 }
 
                 $companyData = [
@@ -45,7 +58,7 @@ class Company
                         'PHONE' => $phones,
                         'EMAIL' => $emails
                     ],
-                    'CONTACT_ID' => [$idContact],
+                    'CONTACT_ID' => $idContact,
                     'UF_REGION' => $idRegion,
                     'UF_SYNCHRONIZE' => 1
                 ];
@@ -53,7 +66,7 @@ class Company
                 $requisiteData = [
                     'ENTITY_TYPE_ID' => CCrmOwnerType::Company,
                     'ENTITY_ID' => "",
-                    'PRESET_ID' => $company->Type === "ЮЛ" ? 1 : 3, //1: юр.лицо, 3: физ. лицо
+                    'PRESET_ID' => $company->Type === "ЮЛ" ? 1 : 2, //1: юр.лицо, 2: ИП
                     'NAME' => "Реквизиты",
                     'XML_ID' => $company->Guid1C,
                     'ACTIVE' => "Y",
@@ -85,7 +98,7 @@ class Company
                     'RQ_COR_ACC_NUM' => $company->Bank->Bank_KorSchet
                 ];
 
-                if ($company->ID !== "") {
+                if (isset($company->ID)) {
                     $companyList = APICompany::getCompanyList(['ID' => $company->ID]);
                 } else {
                     $companyList = APICompany::getCompanyList(['UF_GUID1C' => $company->Guid1C]);
@@ -118,6 +131,27 @@ class Company
         ];
 
         return APIContacts::addContact($dataContact);
+    }
+
+    private static function updateContact($assignedById = null, $idContact = null, $data = [])
+    {
+        $phones = APIContacts::collectPhone($data->ContactFace_Phone);
+        $emails = APIContacts::collectEmail($data->ContactFace_Email);
+
+        APIContacts::deleteContacts($idContact, 'CONTACT');
+
+        $dataContact = [
+            'NAME' => $data->ContactFace_Name,
+            'ASSIGNED_BY_ID' => $assignedById,
+            'UF_GUID1C' => $data->ContactFace_Guid1C,
+            'FM' => [
+                'PHONE' => $phones,
+                'EMAIL' => $emails
+            ]
+        ];
+
+        APIContacts::updateContact($idContact, $dataContact);
+        return $idContact;
     }
 
     private static function addCompany($companyData = [], $requisiteData = [], $bankRequisiteData = [])
@@ -178,7 +212,7 @@ class Company
             $idRequisites = APICompany::getRequisiteList(['ENTITY_ID' => $bxid], ['ID']);
         }
 
-        $delContact = APIContacts::deleteContact($idCompany[0]['ID']);
+        $delContact = APIContacts::deleteContacts($idCompany[0]['ID'], 'COMPANY');
 
         $delRequisite = true;
         if (count($idRequisites) !== 0) {

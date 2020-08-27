@@ -6,4 +6,7 @@ AddEventHandler('rest', 'OnRestServiceBuildDescription', array('\ExchangeOdinS',
 AddEventHandler("crm", 'OnBeforeCrmCompanyUpdate', array('\Events', 'updateCompany'));
 AddEventHandler("crm", 'OnAfterRequisiteUpdate', array('\Events', 'updateRequisite'));
 AddEventHandler("crm", 'OnAfterCrmDealUpdate', array('\Events', 'updateDeal'));
+AddEventHandler('crm', 'OnAfterCrmContactAdd', array('\Events', 'addContact'));
+AddEventHandler('crm', 'OnAfterCrmContactUpdate', array('\Events', 'updateContact'));
 AddEventHandler('main', 'OnEpilog', array('\Events', 'disabler_ui'));
+
